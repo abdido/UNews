@@ -1,0 +1,134 @@
+/* GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '';
+
+CREATE DATABASE notification; */
+
+USE notification;
+
+/* user */
+CREATE TABLE user(
+    id VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id)
+)ENGINE = INNODB;
+
+/* SHOW tables; */
+
+INSERT INTO user ( id, name ) VALUES(
+    'eko', 'Eko Kurnianto'
+);
+INSERT INTO user ( id, name ) VALUES(
+    'kwa', 'Kwang Song'
+);
+
+SELECT name FROM user;
+
+/* notification */
+
+CREATE TABLE notification(
+    id INT not NULL AUTO_INCREMENT,
+    title VARCHAR(255) not NULL,
+    detail TEXT NOT NULL,
+    create_at TIMESTAMP NOT null,
+    user_id VARCHAR(100),
+    PRIMARY KEY (id)
+)ENGINE = INNODB;
+
+ALTER TABLE notification
+    ADD CONSTRAINT fk_notification_user
+        FOREIGN KEY (user_id) REFERENCES user (id);
+
+desc notification;
+
+INSERT INTO notification ( title, detail, create_at, user_id ) VALUES(
+    'contoh pesanan', 'detail pesanan', CURRENT_TIMESTAMP(), 'eko'
+);
+INSERT INTO notification ( title, detail, create_at, user_id ) VALUES(
+    'contoh pesanan gada', 'detail promo gada', CURRENT_TIMESTAMP(), null
+);
+INSERT INTO notification ( title, detail, create_at, user_id ) VALUES(
+    'contoh pembayaran', 'detail pembayaran', CURRENT_TIMESTAMP(), 'kwa'
+);
+
+SELECT * FROM notification;
+
+SELECT * FROM notification WHERE (user_id = 'kwa' or user_id is null) ORDER BY create_at DESC;
+
+CREATE TABLE category(
+    id VARCHAR(100) not null,
+    name varchar(100)not null,
+    PRIMARY KEY (id)
+)ENGINE = INNODB;
+
+show TABLES;
+
+alter table notification
+    add COLUMN category_id VARCHAR(100);
+
+DESCRIBE notification;
+
+alter table notification
+    add CONSTRAINT fk_notification_category
+        FOREIGN KEY (category_id) REFERENCES category(id);
+
+SELECT * FROM notification;
+
+INSERT INTO category ( id, name ) VALUES(
+     'INFO', 'info'
+);
+INSERT INTO category ( id, name ) VALUES(
+     'PROMO', 'promo'
+);
+
+UPDATE notification set category_id = 'INFO' WHERE id = 1;
+UPDATE notification set category_id = 'PROMO' WHERE id = 2;
+UPDATE notification set category_id = 'INFO' WHERE id = 3;
+
+SELECT * FROM notification n
+JOIN category c ON (n.category_id = c.id)
+WHERE (n.user_id = 'eko' or n.user_id is null)
+order by n.create_at DESC;
+
+/* fitur read unread */
+CREATE TABLE notif_read(
+    id INT NOT null AUTO_INCREMENT,
+    is_read BOOLEAN not null,
+    notification_id int not null,
+    user_id VARCHAR(100) not null,
+    PRIMARY KEY (id)
+) ENGINE = innodb;
+
+alter table notif_read
+    add CONSTRAINT fk_notif_read_notification
+        FOREIGN KEY (notification_id) REFERENCES notification(id);
+
+alter table notif_read
+    add CONSTRAINT fk_notif_read_user
+        FOREIGN KEY (user_id) REFERENCES user(id);
+
+desc notif_read;
+
+INSERT INTO notif_read ( is_read, notification_id, user_id ) VALUES(
+    true, 4, 'eko'
+);
+INSERT INTO notif_read ( is_read, notification_id, user_id ) VALUES(
+    true, 2, 'kwa'
+);
+
+SELECT * from notif_read;
+
+SELECT * FROM notification n
+    JOIN category c on (n.category_id = c.id)
+    left JOIN notif_read nr on (nr.notification_id = n.id)
+WHERE (n.user_id = 'eko' or n.user_id is null) AND (nr.user_id = 'eko' or nr.user_id is NULL)
+ORDER BY n.create_at DESC;
+
+INSERT INTO notification ( title, detail, category_id, user_id, create_at ) VALUES(
+    'Contoh Pesanan Lagi', 'Detail Pesanan Lagi', 'INFO', 'eko', CURRENT_TIMESTAMP()
+);
+
+/* counter */
+SELECT count(*) FROM notification n
+    JOIN category c on (n.category_id = c.id)
+    left JOIN notif_read nr on (nr.notification_id = n.id)
+WHERE (n.user_id = 'eko' or n.user_id is null) AND (nr.user_id is NULL)
+ORDER BY n.create_at DESC;
